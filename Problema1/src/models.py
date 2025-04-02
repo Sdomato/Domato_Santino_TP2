@@ -117,21 +117,4 @@ class LogisticRegressionMulticlass:
         proba = self.predict_proba(X)
         return np.argmax(proba, axis=1)
 
-# Ejemplo de uso:
-if __name__ == '__main__':
-    # Generamos un conjunto de datos de ejemplo:
-    np.random.seed(0)
-    m = 200      # número de muestras
-    n = 4        # número de características
-    k = 3        # número de clases
-    X = np.random.randn(m, n)
-    # Creamos etiquetas aleatorias entre 0 y k-1
-    y = np.random.randint(0, k, m)
-    
-    # Creamos y ajustamos el modelo
-    model = LogisticRegressionMulticlass(learning_rate=0.1, n_iters=1000, reg_lambda=0.1, verbose=True)
-    model.fit(X, y)
-    
-    # Hacemos predicciones
-    preds = model.predict(X)
-    print("Predicciones:", preds)
+

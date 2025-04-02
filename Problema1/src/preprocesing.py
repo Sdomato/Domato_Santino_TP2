@@ -93,10 +93,6 @@ class OneHotEncoderCustom:
         self.fit(df)
         return self.transform(df)
 
-
-
-import pandas as pd
-
 class TrainTestSplit:
     """
     Clase para dividir un DataFrame en conjuntos de entrenamiento y validación.

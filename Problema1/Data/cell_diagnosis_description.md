@@ -1,6 +1,6 @@
 ## **Dataset: Diagnóstico de Cáncer de Mama**
-Este conjunto de datos proviene de **tres laboratorios de investigación biomédica**, que han recolectado información sobre muestras celulares.
-El propósito es evaluar si una célula presenta características compatibles con una condición médica, basada en mediciones morfológicas y bioquímicas de las células obtenidas en estudios clínicos.  
+E
+El propósito es evaluar si una célula presenta características compatibles con unaste conjunto de datos proviene de **tres laboratorios de investigación biomédica**, que han recolectado información sobre muestras celulares. condición médica, basada en mediciones morfológicas y bioquímicas de las células obtenidas en estudios clínicos.  
 ---
 
 ## **Descripción de las Variables**
