@@ -117,4 +117,129 @@ class LogisticRegressionMulticlass:
         proba = self.predict_proba(X)
         return np.argmax(proba, axis=1)
 
+class LogisticRegressionCostReweighted:
+    """
+    Regresión Logística binaria con re‑ponderación de costo.
+    
+    En la función de costo, los términos correspondientes a las muestras de la clase minoritaria se multiplican por:
+    
+        C = π2 / π1
+    
+    donde π1 es la proporción de la clase minoritaria y π2 la de la mayoritaria.
+    
+    Parámetros:
+      - learning_rate: tasa de aprendizaje.
+      - n_iters: número de iteraciones del algoritmo de descenso de gradiente.
+      - reg_lambda: parámetro de regularización L2 (no se re‑regulariza el término de sesgo).
+      - verbose: si True, imprime el costo cada 100 iteraciones.
+    """
+    
+    def __init__(self, learning_rate=0.01, n_iters=1000, reg_lambda=0.0, verbose=False):
+        self.learning_rate = learning_rate
+        self.n_iters = n_iters
+        self.reg_lambda = reg_lambda
+        self.verbose = verbose
+        self.theta = None  # Parámetros (incluyendo el sesgo)
+    
+    def _sigmoid(self, z):
+        return 1 / (1 + np.exp(-z))
+    
+    def _compute_cost(self, X, y):
+        """
+        Calcula la función de costo re‑ponderada.
+        X: matriz de características sin el sesgo, de forma (m, n).
+        y: vector de etiquetas (0 o 1), de forma (m,).
+        """
+        m = X.shape[0]
+        # Agregar columna de 1's para el sesgo
+        X_bias = np.hstack([np.ones((m, 1)), X])
+        z = X_bias.dot(self.theta)
+        h = self._sigmoid(z)
+        
+        # Calcular las proporciones (a-priori)
+        m_total = m
+        # Supongamos que las clases son 0 y 1
+        count_0 = np.sum(y == 0)
+        count_1 = np.sum(y == 1)
+        
+        # Determinar cuál es la clase minoritaria
+        if count_0 <= count_1:
+            minority_class = 0
+            majority_class = 1
+            pi1 = count_0 / m_total
+            pi2 = count_1 / m_total
+        else:
+            minority_class = 1
+            majority_class = 0
+            pi1 = count_1 / m_total
+            pi2 = count_0 / m_total
+        
+        # Factor de re‑ponderación
+        C = pi2 / pi1
+        
+        # Crear vector de pesos: multiplicar por C si la muestra pertenece a la clase minoritaria
+        weights = np.where(y == minority_class, C, 1)
+        
+        # Calcular el costo re‑ponderado (sin regularización)
+        cost = - np.sum(weights * (y * np.log(h + 1e-15) + (1 - y) * np.log(1 - h + 1e-15))) / m
+        
+        # Agregar regularización (sin incluir el sesgo: theta[0])
+        reg_term = (self.reg_lambda / (2 * m)) * np.sum(self.theta[1:] ** 2)
+        cost += reg_term
+        
+        return cost
+    
+    def fit(self, X, y):
+        """
+        Ajusta el modelo usando descenso de gradiente con cost re‑weighting.
+        X: matriz de características sin el sesgo, de forma (m, n).
+        y: vector de etiquetas (0 o 1), de forma (m,).
+        """
+        m, n = X.shape
+        # Inicializar theta (n+1 parámetros, incluyendo sesgo) en cero
+        self.theta = np.zeros(n + 1)
+        # Agregar columna de 1's a X
+        X_bias = np.hstack([np.ones((m, 1)), X])
+        
+        # Calcular el factor de re‑ponderación de forma global
+        count_0 = np.sum(y == 0)
+        count_1 = np.sum(y == 1)
+        if count_0 <= count_1:
+            minority_class = 0
+        else:
+            minority_class = 1
+        # Creamos el vector de pesos para cada muestra (fijo durante el entrenamiento)
+        weights = np.where(y == minority_class, 
+                           (np.min([count_0, count_1]) / np.max([count_0, count_1]))**-1, 1)
+        # Alternativamente, podemos recomputar C como:
+        # C = (max(count_0, count_1) / m) / (min(count_0, count_1) / m) = max(count_0, count_1) / min(count_0, count_1)
+        C = max(count_0, count_1) / min(count_0, count_1)
+        weights = np.where(y == minority_class, C, 1)
+        
+        for i in range(self.n_iters):
+            z = X_bias.dot(self.theta)
+            h = self._sigmoid(z)
+            # Error ponderado
+            error = h - y
+            # Cada error se multiplica por su peso correspondiente
+            grad = (X_bias.T.dot(weights * error)) / m
+            # Regularización (excluyendo el sesgo)
+            grad[1:] += (self.reg_lambda / m) * self.theta[1:]
+            self.theta -= self.learning_rate * grad
+            
+            if self.verbose and i % 100 == 0:
+                cost = self._compute_cost(X, y)
+                print(f"Iteración {i}, costo: {cost:.6f}")
+        return self
+    
+    def predict_proba(self, X):
+        m = X.shape[0]
+        X_bias = np.hstack([np.ones((m, 1)), X])
+        z = X_bias.dot(self.theta)
+        return self._sigmoid(z)
+    
+    def predict(self, X):
+        proba = self.predict_proba(X)
+        return (proba >= 0.5).astype(int)
+
 
